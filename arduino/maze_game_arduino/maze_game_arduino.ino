@@ -107,179 +107,6 @@ void loop() {
   }
 }
 
-// Display just the border
-void displayBorder() {
-  // Turn off all LEDs first
-  for (int r = 0; r < 8; r++) {
-    digitalWrite(ROW_PINS[r], HIGH);  // All rows off
-  }
-  
-  // Activate each row one at a time, light up border LEDs
-  for (int row = 0; row < 8; row++) {
-    // All columns off first
-    for (int col = 0; col < 8; col++) {
-      digitalWrite(COL_PINS[col], HIGH);
-    }
-    
-    // Enable this row
-    digitalWrite(ROW_PINS[row], LOW);
-    
-    // Light up border LEDs on this row
-    if (row == 0 || row == 7) {
-      // Top or bottom row - all LEDs on
-      for (int col = 0; col < 8; col++) {
-        digitalWrite(COL_PINS[col], LOW);
-      }
-    } else {
-      // Middle row - just edge LEDs
-      digitalWrite(COL_PINS[0], LOW);  // Left edge
-      digitalWrite(COL_PINS[7], LOW);  // Right edge
-    }
-    
-    // Hold for visibility
-    delay(1);
-    
-    // Disable this row before moving to next
-    digitalWrite(ROW_PINS[row], HIGH);
-  }
-}
-
-// Display a single blinking LED at position 3,3
-void displaySingleLED() {
-  static unsigned long lastBlink = 0;
-  static boolean ledOn = true;
-  
-  // Blink every 500ms
-  if (millis() - lastBlink > 500) {
-    ledOn = !ledOn;
-    lastBlink = millis();
-  }
-  
-  // Display the LED
-  for (int i = 0; i < 10; i++) {  // Refresh several times for brightness
-    // Turn off all rows and columns
-    for (int r = 0; r < 8; r++) {
-      digitalWrite(ROW_PINS[r], HIGH);
-    }
-    for (int c = 0; c < 8; c++) {
-      digitalWrite(COL_PINS[c], HIGH);
-    }
-    
-    if (ledOn) {
-      // Activate row 3
-      digitalWrite(ROW_PINS[3], LOW);
-      
-      // Activate column 3
-      digitalWrite(COL_PINS[3], LOW);
-      
-      // Hold briefly
-      delay(1);
-    }
-  }
-}
-
-// Light up one row at a time
-void displayRows() {
-  static int currentRow = 0;
-  static unsigned long lastChange = 0;
-  
-  // Change row every 200ms
-  if (millis() - lastChange > 200) {
-    currentRow = (currentRow + 1) % 8;
-    lastChange = millis();
-  }
-  
-  // Display the current row
-  for (int i = 0; i < 10; i++) {  // Refresh several times
-    // Turn off all rows
-    for (int r = 0; r < 8; r++) {
-      digitalWrite(ROW_PINS[r], HIGH);
-    }
-    
-    // Turn on all columns
-    for (int c = 0; c < 8; c++) {
-      digitalWrite(COL_PINS[c], LOW);
-    }
-    
-    // Activate current row
-    digitalWrite(ROW_PINS[currentRow], LOW);
-    
-    // Hold briefly
-    delay(1);
-  }
-}
-
-// Light up one column at a time
-void displayColumns() {
-  static int currentCol = 0;
-  static unsigned long lastChange = 0;
-  
-  // Change column every 200ms
-  if (millis() - lastChange > 200) {
-    currentCol = (currentCol + 1) % 8;
-    lastChange = millis();
-  }
-  
-  // Display the current column
-  for (int i = 0; i < 10; i++) {  // Refresh several times
-    // Turn on all rows
-    for (int r = 0; r < 8; r++) {
-      digitalWrite(ROW_PINS[r], LOW);
-    }
-    
-    // Turn off all columns
-    for (int c = 0; c < 8; c++) {
-      digitalWrite(COL_PINS[c], HIGH);
-    }
-    
-    // Activate current column
-    digitalWrite(COL_PINS[currentCol], LOW);
-    
-    // Hold briefly
-    delay(1);
-    
-    // Turn off all rows before next iteration
-    for (int r = 0; r < 8; r++) {
-      digitalWrite(ROW_PINS[r], HIGH);
-    }
-  }
-}
-
-// Display a checkerboard pattern
-void displayCheckerboard() {
-  static unsigned long lastToggle = 0;
-  static boolean toggle = false;
-  
-  // Toggle pattern every 500ms
-  if (millis() - lastToggle > 500) {
-    toggle = !toggle;
-    lastToggle = millis();
-  }
-  
-  // Scan through all rows
-  for (int row = 0; row < 8; row++) {
-    // All rows off
-    for (int r = 0; r < 8; r++) {
-      digitalWrite(ROW_PINS[r], HIGH);
-    }
-    
-    // Set column pattern
-    for (int col = 0; col < 8; col++) {
-      if ((row + col + toggle) % 2 == 0) {
-        digitalWrite(COL_PINS[col], LOW);   // LED on
-      } else {
-        digitalWrite(COL_PINS[col], HIGH);  // LED off
-      }
-    }
-    
-    // Enable this row
-    digitalWrite(ROW_PINS[row], LOW);
-    
-    // Hold briefly
-    delay(1);
-  }
-}
-
 // Display the maze game
 void displayMaze() {
   static unsigned long lastDisplay = 0;
@@ -315,9 +142,7 @@ void displayMaze() {
   for (int c = 0; c < 8; c++) {
     digitalWrite(COL_PINS[c], HIGH);  // Columns off
   }
-  
-  // For 90-degree rotation: swap rows and columns and adjust orientation
-  // Original (x,y) becomes (7-y, x) for 90-degree clockwise rotation
+
   for (int col = 0; col < 8; col++) {
     // Calculate rotated position
     int rotatedRow = 7 - col;  // For 90-degree rotation
@@ -333,7 +158,6 @@ void displayMaze() {
     }
   }
   
-  // Enable current row (inverted for correct orientation)
   digitalWrite(ROW_PINS[7 - currentRow], LOW);
   
   // Handle player position with rotation
