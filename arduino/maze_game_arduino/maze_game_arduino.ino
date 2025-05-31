@@ -1,32 +1,29 @@
-// ENGR40M LED Matrix Maze Game
-// Controls an 8x8 LED matrix to display a maze game
+const byte ROW_PINS[8] = {6, 7, 8, 9, 10, 11, 12, 13};  // Row pins (LOW = row on)
+const byte COL_PINS[8] = {A3, A2, A1, A0, 5, 4, 3, 2};  // Column pins (LOW = LED on)
 
-// Pin configurations - update these based on your wiring
-const byte ROW_PINS[8] = {6, 7, 8, 9, 10, 11, 12, 13};  // Row control pins
-const byte COL_PINS[8] = {A3, A2, A1, A0, 5, 4, 3, 2};  // Column control pins
 
-// Game state variables
-int playerX = 1;         // Player's X position
-int playerY = 1;         // Player's Y position
-int exitX = 6;           // Exit X position
-int exitY = 6;           // Exit Y position
-boolean playerVisible = true;     // Controls player blinking
-unsigned long lastBlink = 0;      // Timer for player blink
-boolean gameWon = false;          // Game state flag
+// Player position and maze data
+int playerX = 1;
+int playerY = 1;
+int exitX = 6;
+int exitY = 6;
+boolean playerVisible = true;
+unsigned long lastBlink = 0;
+boolean gameWon = false;
 
-// Maze layout: 0=path, 1=wall, 2=exit
+// Simple maze layout (0 = path, 1 = wall, 2 = exit)
 byte maze[8][8] = {
-  {0, 0, 0, 0, 0, 0, 0, 0},
-  {0, 0, 0, 0, 0, 0, 0, 0},
-  {0, 0, 0, 0, 0, 0, 0, 0},
-  {0, 0, 0, 0, 0, 0, 0, 0},
+  {0, 0, 0, 0, 0, 0, 0, 0},  
+  {0, 0, 0, 0, 0, 0, 0, 0},  // Paths are 0 (ON)
+  {0, 0, 0, 0, 0, 0, 0, 0},  // Walls are 1 (OFF)
+  {0, 0, 0, 0, 0, 0, 0, 0},  // Exit is 2 (ON, blinking)
   {0, 0, 0, 0, 0, 0, 0, 0},
   {0, 0, 0, 0, 0, 0, 0, 0},
   {0, 0, 0, 0, 0, 0, 0, 0},
   {0, 0, 0, 0, 0, 0, 0, 0}
 };
 
-// Serial communication
+// Buffer for receiving serial data
 String inputBuffer = "";
 boolean receivingMaze = false;
 int mazeRow = 0;
@@ -34,12 +31,12 @@ int mazeRow = 0;
 void setup() {
   Serial.begin(9600);
   
-  // Initialize LED matrix pins
+  // Reset all pins
   for (int i = 0; i < 8; i++) {
     pinMode(ROW_PINS[i], OUTPUT);
     pinMode(COL_PINS[i], OUTPUT);
-    digitalWrite(ROW_PINS[i], HIGH);  // Turn off rows
-    digitalWrite(COL_PINS[i], HIGH);  // Turn off columns
+    digitalWrite(ROW_PINS[i], HIGH);  // Rows off 
+    digitalWrite(COL_PINS[i], HIGH);  // Columns off
   }
   
   // Wait for serial to initialize
@@ -50,7 +47,7 @@ void setup() {
 }
 
 void loop() {
-  // Toggle player visibility for blinking effect
+  // Handle player blinking
   if (millis() - lastBlink > 300) {
     playerVisible = !playerVisible;
     lastBlink = millis();
@@ -110,94 +107,145 @@ void loop() {
   }
 }
 
-// Draw a border around the display edges
+// Display just the border
 void displayBorder() {
+  // Turn off all LEDs first
+  for (int r = 0; r < 8; r++) {
+    digitalWrite(ROW_PINS[r], HIGH);  // All rows off
+  }
+  
+  // Activate each row one at a time, light up border LEDs
   for (int row = 0; row < 8; row++) {
-    // Turn off all rows and columns
-    for (int r = 0; r < 8; r++) digitalWrite(ROW_PINS[r], HIGH);
-    for (int c = 0; c < 8; c++) digitalWrite(COL_PINS[c], HIGH);
-    
-    // Enable current row
-    digitalWrite(ROW_PINS[row], LOW);
-    
-    // Light up border LEDs (top/bottom rows or first/last columns)
-    if (row == 0 || row == 7) {
-      for (int col = 0; col < 8; col++) digitalWrite(COL_PINS[col], LOW);
-    } else {
-      digitalWrite(COL_PINS[0], LOW);
-      digitalWrite(COL_PINS[7], LOW);
+    // All columns off first
+    for (int col = 0; col < 8; col++) {
+      digitalWrite(COL_PINS[col], HIGH);
     }
     
+    // Enable this row
+    digitalWrite(ROW_PINS[row], LOW);
+    
+    // Light up border LEDs on this row
+    if (row == 0 || row == 7) {
+      // Top or bottom row - all LEDs on
+      for (int col = 0; col < 8; col++) {
+        digitalWrite(COL_PINS[col], LOW);
+      }
+    } else {
+      // Middle row - just edge LEDs
+      digitalWrite(COL_PINS[0], LOW);  // Left edge
+      digitalWrite(COL_PINS[7], LOW);  // Right edge
+    }
+    
+    // Hold for visibility
     delay(1);
+    
+    // Disable this row before moving to next
+    digitalWrite(ROW_PINS[row], HIGH);
   }
 }
 
-// Blink a single LED at position (3,3)
+// Display a single blinking LED at position 3,3
 void displaySingleLED() {
   static unsigned long lastBlink = 0;
   static boolean ledOn = true;
   
-  // Toggle LED state every 500ms
+  // Blink every 500ms
   if (millis() - lastBlink > 500) {
     ledOn = !ledOn;
     lastBlink = millis();
   }
   
-  if (ledOn) {
-    // Clear display
-    for (int r = 0; r < 8; r++) digitalWrite(ROW_PINS[r], HIGH);
-    for (int c = 0; c < 8; c++) digitalWrite(COL_PINS[c], HIGH);
+  // Display the LED
+  for (int i = 0; i < 10; i++) {  // Refresh several times for brightness
+    // Turn off all rows and columns
+    for (int r = 0; r < 8; r++) {
+      digitalWrite(ROW_PINS[r], HIGH);
+    }
+    for (int c = 0; c < 8; c++) {
+      digitalWrite(COL_PINS[c], HIGH);
+    }
     
-    // Light up LED at (3,3)
-    digitalWrite(ROW_PINS[3], LOW);
-    digitalWrite(COL_PINS[3], LOW);
-    delay(1);
+    if (ledOn) {
+      // Activate row 3
+      digitalWrite(ROW_PINS[3], LOW);
+      
+      // Activate column 3
+      digitalWrite(COL_PINS[3], LOW);
+      
+      // Hold briefly
+      delay(1);
+    }
   }
 }
 
-// Cycle through lighting up each row
+// Light up one row at a time
 void displayRows() {
   static int currentRow = 0;
   static unsigned long lastChange = 0;
   
-  // Move to next row every 200ms
+  // Change row every 200ms
   if (millis() - lastChange > 200) {
     currentRow = (currentRow + 1) % 8;
     lastChange = millis();
   }
   
-  // Clear display
-  for (int r = 0; r < 8; r++) digitalWrite(ROW_PINS[r], HIGH);
-  
-  // Light up current row
-  for (int c = 0; c < 8; c++) digitalWrite(COL_PINS[c], LOW);
-  digitalWrite(ROW_PINS[currentRow], LOW);
-  
-  delay(1);
+  // Display the current row
+  for (int i = 0; i < 10; i++) {  // Refresh several times
+    // Turn off all rows
+    for (int r = 0; r < 8; r++) {
+      digitalWrite(ROW_PINS[r], HIGH);
+    }
+    
+    // Turn on all columns
+    for (int c = 0; c < 8; c++) {
+      digitalWrite(COL_PINS[c], LOW);
+    }
+    
+    // Activate current row
+    digitalWrite(ROW_PINS[currentRow], LOW);
+    
+    // Hold briefly
+    delay(1);
+  }
 }
 
-// Cycle through lighting up each column
+// Light up one column at a time
 void displayColumns() {
   static int currentCol = 0;
   static unsigned long lastChange = 0;
   
-  // Move to next column every 200ms
+  // Change column every 200ms
   if (millis() - lastChange > 200) {
     currentCol = (currentCol + 1) % 8;
     lastChange = millis();
   }
   
-  // Clear display
-  for (int c = 0; c < 8; c++) digitalWrite(COL_PINS[c], HIGH);
-  
-  // Light up current column
-  for (int r = 0; r < 8; r++) digitalWrite(ROW_PINS[r], LOW);
-  digitalWrite(COL_PINS[currentCol], LOW);
-  
-  delay(1);
+  // Display the current column
+  for (int i = 0; i < 10; i++) {  // Refresh several times
+    // Turn on all rows
+    for (int r = 0; r < 8; r++) {
+      digitalWrite(ROW_PINS[r], LOW);
+    }
+    
+    // Turn off all columns
+    for (int c = 0; c < 8; c++) {
+      digitalWrite(COL_PINS[c], HIGH);
+    }
+    
+    // Activate current column
+    digitalWrite(COL_PINS[currentCol], LOW);
+    
+    // Hold briefly
+    delay(1);
+    
+    // Turn off all rows before next iteration
+    for (int r = 0; r < 8; r++) {
+      digitalWrite(ROW_PINS[r], HIGH);
+    }
+  }
 }
 
-// Display an animated checkerboard pattern
+// Display a checkerboard pattern
 void displayCheckerboard() {
   static unsigned long lastToggle = 0;
   static boolean toggle = false;
@@ -208,18 +256,26 @@ void displayCheckerboard() {
     lastToggle = millis();
   }
   
-  // Draw checkerboard pattern
+  // Scan through all rows
   for (int row = 0; row < 8; row++) {
-    // Clear rows
-    for (int r = 0; r < 8; r++) digitalWrite(ROW_PINS[r], HIGH);
-    
-    // Set column pattern (alternating based on row + toggle)
-    for (int col = 0; col < 8; col++) {
-      digitalWrite(COL_PINS[col], (row + col + toggle) % 2 ? HIGH : LOW);
+    // All rows off
+    for (int r = 0; r < 8; r++) {
+      digitalWrite(ROW_PINS[r], HIGH);
     }
     
-    // Enable current row
+    // Set column pattern
+    for (int col = 0; col < 8; col++) {
+      if ((row + col + toggle) % 2 == 0) {
+        digitalWrite(COL_PINS[col], LOW);   // LED on
+      } else {
+        digitalWrite(COL_PINS[col], HIGH);  // LED off
+      }
+    }
+    
+    // Enable this row
     digitalWrite(ROW_PINS[row], LOW);
+    
+    // Hold briefly
     delay(1);
   }
 }
@@ -321,17 +377,20 @@ void parseMazeData(String jsonData) {
   for (int i = 0; i < jsonData.length(); i++) {
     char c = jsonData.charAt(i);
     
-    // Look for digits (0,1,2) in the string
-    if (c >= '0' && c <= '2') {
+    // Skip all characters except digits and use 0 and 1 to set maze
+    if (c == '0' || c == '1' || c == '2') {
+      // If it's a digit (0 or 1), use it to set the maze
       if (col < 8 && row < 8) {
-        // Invert coordinates to match LED matrix orientation
+        // INVERT X AND Y COORDINATES TO MATCH PLAYER POSITION INVERSION
         int displayRow = 7 - row;
         int displayCol = 7 - col;
         
-        maze[displayRow][displayCol] = c - '0'; // Convert char to int
-        
-        // Update exit position if found
-        if (maze[displayRow][displayCol] == 2) {
+        if (c == '0') {
+          maze[displayRow][displayCol] = 0; // Path
+        } else if (c == '1') {
+          maze[displayRow][displayCol] = 1; // Wall
+        } else if (c == '2') {
+          maze[displayRow][displayCol] = 0; // Path (exit position)
           exitX = displayCol;
           exitY = displayRow;
         }
@@ -348,54 +407,104 @@ void parseMazeData(String jsonData) {
     }
   }
   
+  // Print the parsed maze for debugging
+  Serial.println("Parsed maze:");
+  for (int y = 0; y < 8; y++) {
+    for (int x = 0; x < 8; x++) {
+      Serial.print(maze[y][x]);
+      Serial.print(" ");
+    }
+    Serial.println();
+  }
+  
+  // Find the exit position (value 2)
+  for (int y = 0; y < 8; y++) {
+    for (int x = 0; x < 8; x++) {
+      if (maze[y][x] == 2) {
+        exitX = x;
+        exitY = y;
+        break;
+      }
+    }
+  }
+  
   Serial.println("MAZE:RECEIVED");
 }
 
-// Update player position from "x,y" string
+// Parse player position from format "x,y"
 void parsePlayerPosition(String posData) {
-  int comma = posData.indexOf(',');
-  if (comma > 0) {
-    // Parse coordinates
-    int newX = 7 - posData.substring(0, comma).toInt();  // Invert X
-    int newY = 7 - posData.substring(comma + 1).toInt(); // Invert Y
+  // Debug output
+  Serial.print("Received player position: ");
+  Serial.println(posData);
+  
+  // Look for comma separator
+  int commaIndex = posData.indexOf(',');
+  if (commaIndex > 0) {
+    String xStr = posData.substring(0, commaIndex);
+    String yStr = posData.substring(commaIndex + 1);
     
-    // Validate and update position
+    // Convert to integers and store
+    int newX = xStr.toInt();
+    int newY = yStr.toInt();
+    
+    // Check if valid
     if (newX >= 0 && newX < 8 && newY >= 0 && newY < 8) {
-      playerX = newX;
-      playerY = newY;
+      // FIX INVERTED DIRECTIONS: Invert the X and Y coordinates
+      playerX = 7 - newX;  // Invert X coordinate
+      playerY = 7 - newY;  // Invert Y coordinate
+      
+      // Reset the blink timer to make player visible immediately
       playerVisible = true;
       lastBlink = millis();
-      Serial.println("PLAYER:UPDATED");
+      
+      // Debug output
+      Serial.print("Player moved to (inverted): ");
+      Serial.print(playerX);
+      Serial.print(",");
+      Serial.println(playerY);
     } else {
-      Serial.println("ERR:INVALID_POSITION");
+      Serial.println("Invalid player position!");
     }
+    
+    // Acknowledge update
+    Serial.println("PLAYER:UPDATED");
   } else {
-    Serial.println("ERR:INVALID_FORMAT");
+    Serial.println("Invalid player position format!");
   }
 }
 
-// Flash all LEDs for victory animation
+// Victory animation
 void victory() {
   static int flashCount = 0;
   static unsigned long lastFlash = 0;
   
-  // Flash 3 times (6 states: on/off/on/off/on/off)
-  if (flashCount >= 6) {
+  // Only flash 3 times, then return to normal display
+  if (flashCount >= 6) { // 3 on/off cycles
     flashCount = 0;
     return;
   }
   
-  // Toggle all LEDs every 150ms
-  if (millis() - lastFlash > 150) {
+  // Alternate between all LEDs on and all LEDs off
+  if (millis() - lastFlash > 150) { // Faster flashing
     lastFlash = millis();
-    bool ledsOn = (flashCount % 2 == 0);
-    
-    // Set all rows and columns at once
-    for (int i = 0; i < 8; i++) {
-      digitalWrite(ROW_PINS[i], ledsOn ? LOW : HIGH);
-      digitalWrite(COL_PINS[i], ledsOn ? LOW : HIGH);
-    }
-    
     flashCount++;
+    
+    if (flashCount % 2 == 1) {
+      // All LEDs on
+      for (int r = 0; r < 8; r++) {
+        digitalWrite(ROW_PINS[r], LOW);
+      }
+      for (int c = 0; c < 8; c++) {
+        digitalWrite(COL_PINS[c], LOW);
+      }
+    } else {
+      // All LEDs off
+      for (int r = 0; r < 8; r++) {
+        digitalWrite(ROW_PINS[r], HIGH);
+      }
+      for (int c = 0; c < 8; c++) {
+        digitalWrite(COL_PINS[c], HIGH);
+      }
+    }
   }
 }
