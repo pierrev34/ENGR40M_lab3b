@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            text-align: center;
+        }
+        h1 {
+            color: #333;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+        }
+        #response {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f0f0f0;
+            border-radius: 4px;
+            min-height: 100px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Maze Game Test Page</h1>
+    <button id="getMaze">Get Maze Data</button>
+    <button id="up">Move Up</button>
+    <button id="down">Move Down</button>
+    <button id="left">Move Left</button>
+    <button id="right">Move Right</button>
+    <button id="newMaze">New Maze</button>
+    <div id="response">Response will appear here</div>
+
+    <script>
+        document.getElementById('getMaze').addEventListener('click', function() {
+            fetch('/api/maze')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('response').innerText = JSON.stringify(data, null, 2);
+                })
+                .catch(error => {
+                    document.getElementById('response').innerText = 'Error: ' + error;
+                });
+        });
+
+        document.getElementById('up').addEventListener('click', function() {
+            movePlayer('up');
+        });
+
+        document.getElementById('down').addEventListener('click', function() {
+            movePlayer('down');
+        });
+
+        document.getElementById('left').addEventListener('click', function() {
+            movePlayer('left');
+        });
+
+        document.getElementById('right').addEventListener('click', function() {
+            movePlayer('right');
+        });
+
+        document.getElementById('newMaze').addEventListener('click', function() {
+            fetch('/api/new_maze', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('response').innerText = JSON.stringify(data, null, 2);
+                })
+                .catch(error => {
+                    document.getElementById('response').innerText = 'Error: ' + error;
+                });
+        });
+
+        function movePlayer(direction) {
+            fetch('/api/move?direction=' + direction, { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('response').innerText = JSON.stringify(data, null, 2);
+                })
+                .catch(error => {
+                    document.getElementById('response').innerText = 'Error: ' + error;
+                });
+        }
+    </script>
+</body>
+</html>

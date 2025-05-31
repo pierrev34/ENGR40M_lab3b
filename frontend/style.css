@@ -1,0 +1,86 @@
+/* Minimalist Maze Game */
+:root {
+    --primary: #000000;
+    --background: #ffffff;
+    --wall: #000000;
+    --grid: #000000;
+}
+
+body {
+    margin: 0;
+    padding: 20px;
+    background-color: var(--background);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.game-container {
+    text-align: center;
+}
+
+.maze {
+    display: inline-grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 1px;
+    background: var(--grid);
+    padding: 15px;
+    border: 1px solid var(--grid);
+    margin-bottom: 20px;
+}
+
+.cell {
+    width: 30px;
+    height: 30px;
+    background: var(--background);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.wall {
+    background: var(--wall);
+}
+
+.player {
+    background: var(--primary);
+    border-radius: 50%;
+    width: 70%;
+    height: 70%;
+}
+
+.end {
+    background: var(--background);
+    position: relative;
+}
+
+.end::after {
+    content: '';
+    width: 0;
+    height: 0;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-top: 12px solid var(--primary);
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.btn {
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    font-size: 14px;
+    cursor: pointer;
+    margin-top: 10px;
+}
+
+#status {
+    font-size: 14px;
+    margin-top: 10px;
+    min-height: 20px;
+}

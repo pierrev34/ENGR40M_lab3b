@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Maze Game Controller</title>
+    <style>
+        body { 
+            margin: 0; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            background: #f0f0f0; 
+            font-family: Arial, sans-serif; 
+        }
+        h1 { margin-bottom: 20px; font-size: 24px; }
+        #gameContainer { 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+        }
+        #maze { 
+            display: grid; 
+            grid-template-columns: repeat(8, 40px); 
+            grid-template-rows: repeat(8, 40px);
+            gap: 1px; 
+            background: #333; 
+            padding: 1px; 
+            border: 1px solid #000;
+        }
+        .cell { 
+            width: 40px; 
+            height: 40px; 
+            background: white; 
+        }
+        .wall { background: #333; }
+        .player { background: #00cc00; }
+        .exit { background: #ff0000; }
+        
+        #new-maze-container {
+            margin-top: 20px;
+            text-align: center;
+        }
+        
+        #new-maze {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <h1>Maze Game</h1>
+        <div id="maze"></div>
+        
+        <div id="new-maze-container">
+            <button id="new-maze">New Maze</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const mazeEl = document.getElementById('maze');
+
+            const newMazeBtn = document.getElementById('new-maze');
+            
+            let maze = [];
+            let playerPos = {x: 0, y: 0};
+            
+            // Fetch the initial maze
+            fetchMaze();
+            
+
+            newMazeBtn.addEventListener('click', generateNewMaze);
+            
+            // Keyboard controls
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'ArrowUp') movePlayer('up');
+                else if (e.key === 'ArrowDown') movePlayer('down');
+                else if (e.key === 'ArrowLeft') movePlayer('left');
+                else if (e.key === 'ArrowRight') movePlayer('right');
+            });
+            
+            // Fetch maze data from backend
+            function fetchMaze() {
+                fetch('/api/maze')
+                    .then(response => response.json())
+                    .then(data => {
+                        maze = data.maze;
+                        playerPos = {
+                            x: data.player_pos[0],
+                            y: data.player_pos[1]
+                        };
+                        renderMaze();
+                    })
+                    .catch(error => {
+                        console.error('Error fetching maze:', error);
+                    });
+            }
+            
+            // Move player
+            function movePlayer(direction) {
+                fetch(`/api/move?direction=${direction}`, {
+                    method: 'POST'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    maze = data.maze;
+                    playerPos = {
+                        x: data.player_pos[0],
+                        y: data.player_pos[1]
+                    };
+                    renderMaze();
+                    
+                    if (data.won) {
+                        // Automatically generate a new maze when won
+                        setTimeout(() => {
+                            generateNewMaze();
+                        }, 500);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error moving player:', error);
+                });
+            }
+            
+            // Generate new maze
+            function generateNewMaze() {
+                fetch('/api/new_maze', {
+                    method: 'POST'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    maze = data.maze;
+                    playerPos = {
+                        x: data.player_pos[0],
+                        y: data.player_pos[1]
+                    };
+                    renderMaze();
+                })
+                .catch(error => {
+                    console.error('Error generating new maze:', error);
+                });
+            }
+            
+            // Render the maze
+            function renderMaze() {
+                mazeEl.innerHTML = '';
+                
+                // Create grid template based on maze dimensions
+                const rows = maze.length;
+                const cols = maze[0].length;
+                
+                mazeEl.style.gridTemplateColumns = `repeat(${cols}, 40px)`;
+                mazeEl.style.gridTemplateRows = `repeat(${rows}, 40px)`;
+                
+                for (let y = 0; y < rows; y++) {
+                    for (let x = 0; x < cols; x++) {
+                        const cell = document.createElement('div');
+                        cell.className = 'cell';
+                        
+                        // Player cell
+                        if (x === playerPos.x && y === playerPos.y) {
+                            cell.classList.add('player');
+                        }
+                        // Exit cell (value 2)
+                        else if (maze[y][x] === 2) {
+                            cell.classList.add('exit');
+                        }
+                        // Wall cell (value 1)
+                        else if (maze[y][x] === 1) {
+                            cell.classList.add('wall');
+                        }
+                        
+                        mazeEl.appendChild(cell);
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
